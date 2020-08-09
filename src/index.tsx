@@ -1,14 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 import { Button } from 'antd';
 import { ButtonProps } from 'antd/es/button';
 
-export interface CountDownButtonProps extends Omit<ButtonProps, 'onClick'> {
+type CountDownButtonRenderProps = (isStart: boolean, count: number, loading: boolean) => React.ReactNode;
+
+export interface CountdownButtonProps extends Omit<ButtonProps, 'onClick'> {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
+  children: React.ReactNode | CountDownButtonRenderProps;
+  unit?: string;
   time?: number;
 }
 
-const sleep = (time: number): [number, Promise<void>] => {
+interface CompoundedComponent
+  extends React.ForwardRefExoticComponent<CountdownButtonProps & React.RefAttributes<HTMLElement>> {
+  __ANT_BUTTON: boolean;
+}
+
+export const sleep = (time: number): [number, Promise<void>] => {
   let timer = 0;
   const promise = new Promise<void>(resolve => {
     timer = window.setTimeout(resolve, time);
@@ -16,14 +25,19 @@ const sleep = (time: number): [number, Promise<void>] => {
   return [timer, promise];
 };
 
-const CountDownButton: React.FC<CountDownButtonProps> = props => {
-  const { children, onClick, time = 60, ...restProps } = props;
-  const [loading, setLoading] = useState(false);
+export const useCountdown = (time: number): [boolean, number, () => void] => {
   const [count, setCount] = useState(time);
-  const [startCountDown, setStartCountDown] = useState(false);
+  const [isStart, setStartCountDown] = useState(false);
+
   const timer = useRef(0);
 
-  const countdown = () => {
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(timer.current);
+    };
+  }, []);
+
+  const countdown = useCallback(() => {
     setStartCountDown(true);
     if (timer.current) window.clearTimeout(timer.current);
     const [timerId, wait] = sleep(1000);
@@ -38,11 +52,20 @@ const CountDownButton: React.FC<CountDownButtonProps> = props => {
         return time;
       });
     });
-  };
+  }, []);
+
+  return [isStart, count, countdown];
+};
+
+const InternalButton: React.ForwardRefRenderFunction<unknown, CountdownButtonProps> = (props, ref) => {
+  const { children, onClick, time = 60, unit = 's', ...restProps } = props;
+  const [loading, setLoading] = useState(false);
+
+  const [isStart, count, countdown] = useCountdown(time);
 
   const onClickButton: React.MouseEventHandler<HTMLButtonElement> = e => {
     e.stopPropagation();
-    if (startCountDown) return;
+    if (isStart) return;
     if (onClick) {
       setLoading(true);
       Promise.resolve(onClick(e))
@@ -55,17 +78,31 @@ const CountDownButton: React.FC<CountDownButtonProps> = props => {
     } else countdown();
   };
 
-  useEffect(() => {
-    return () => {
-      window.clearTimeout(timer.current);
-    };
-  }, []);
+  const defaultChildren = loading ? <span /> : isStart ? count + unit : children;
+
+  const renderChildren =
+    typeof children === 'function'
+      ? (children as CountDownButtonRenderProps)(isStart, count, loading)
+      : defaultChildren;
 
   return (
-    <Button {...restProps} onClick={onClickButton}>
-      {loading ? null : startCountDown ? `${count}s` : children}
+    <Button
+      loading={typeof children !== 'function' && loading}
+      {...restProps}
+      onClick={onClickButton}
+      ref={ref as any}
+    >
+      {renderChildren}
     </Button>
   );
 };
 
-export default CountDownButton;
+const CountdownButton = React.forwardRef<unknown, CountdownButtonProps>(
+  InternalButton,
+) as CompoundedComponent;
+
+CountdownButton.displayName = 'CountdownButton';
+
+CountdownButton.__ANT_BUTTON = true;
+
+export default CountdownButton;
