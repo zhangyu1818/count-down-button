@@ -7,7 +7,7 @@ type CountDownButtonRenderProps = (isStart: boolean, count: number, loading: boo
 
 export interface CountdownButtonProps extends Omit<ButtonProps, 'onClick'> {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
-  children: React.ReactNode | CountDownButtonRenderProps;
+  children?: React.ReactNode | CountDownButtonRenderProps;
   unit?: string;
   time?: number;
 }
@@ -71,6 +71,9 @@ const InternalButton: React.ForwardRefRenderFunction<unknown, CountdownButtonPro
       Promise.resolve(onClick(e))
         .then(() => {
           countdown();
+        })
+        .catch(e => {
+          console.warn('onClick throw a error', e);
         })
         .finally(() => {
           setLoading(false);
