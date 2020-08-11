@@ -13,12 +13,20 @@ yarn add countdown-button
 ## 默认的使用方式
 
 ```tsx
+import React from 'react';
+import CountdownButton from 'countdown-button';
+
+export default () => (
+  <div>
     <CountdownButton>获取验证码</CountdownButton>
     <CountdownButton type="link" unit="秒">
       获取验证码
     </CountdownButton>
     <CountdownButton type="primary">获取验证码</CountdownButton>
     <CountdownButton>自定义的children</CountdownButton>
+  </div>
+);
+
 ```
 
 ## 点击事件
@@ -28,6 +36,11 @@ yarn add countdown-button
 当`Promise`为`resolve`时会开始倒计时，`reject`时则不会
 
 ```tsx
+import React from 'react';
+import CountdownButton, { sleep } from 'countdown-button';
+
+export default () => (
+  <div>
     <CountdownButton onClick={() => alert('开始倒计时')}>普通的onClick</CountdownButton>
     <CountdownButton onClick={async () => await sleep(1000)[1]}>async</CountdownButton>
     <CountdownButton onClick={() => new Promise(resolve => sleep(2000)[1].then(resolve))}>
@@ -36,6 +49,9 @@ yarn add countdown-button
     <CountdownButton onClick={() => new Promise((_, reject) => sleep(2000)[1].then(reject))}>
       Promise Reject
     </CountdownButton>
+  </div>
+);
+
 ```
 
 ## Render Props
@@ -43,6 +59,13 @@ yarn add countdown-button
 支持自定义更强的`Render Props`
 
 ```tsx
+import React from 'react';
+import CountdownButton, { sleep } from 'countdown-button';
+
+const t = '_jihgfedcba';
+
+export default () => (
+  <div>
     <CountdownButton time={10} onClick={() => sleep(2000)[1]}>
       {(isStart, count, loading) => {
         const text = '支持render props';
@@ -50,6 +73,9 @@ yarn add countdown-button
         return isStart ? t[count] : text;
       }}
     </CountdownButton>
+  </div>
+);
+
 ```
 
 ## hook
@@ -57,6 +83,9 @@ yarn add countdown-button
 如果想自定义元素，则可以使用`useCountdown`钩子，只提供倒计时功能
 
 ```tsx
+import React, { useState } from 'react';
+import { useCountdown, sleep } from 'countdown-button';
+
 export default () => {
   const [loading, setLoading] = useState(false);
   const [isStart, count, countdown] = useCountdown(10);
@@ -74,6 +103,7 @@ export default () => {
   const btnNode = <button onClick={onClick}>{children}</button>;
   return loading ? loadingNode : btnNode;
 };
+
 ```
 ## Props
 
