@@ -53,11 +53,14 @@ describe('countdown button', () => {
   });
 
   it('should support Promise reject', async () => {
+    console.warn = jest.fn();
+    jest.spyOn(console, 'warn');
     const onClickMock = jest.fn().mockImplementation(() => Promise.reject('promise reject'));
     const wrapper = mount(<CountdownButton onClick={onClickMock} />);
     await act(async () => {
       await wrapper.find('button').simulate('click');
     });
     expect(wrapper.text()).toBe('');
+    expect(console.warn).toBeCalledWith('onClick throw a error', 'promise reject');
   });
 });
